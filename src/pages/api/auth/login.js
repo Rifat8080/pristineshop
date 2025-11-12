@@ -9,6 +9,8 @@ export default async function handler(req, res) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
+  if (user.suspended) return res.status(403).json({ error: 'Account suspended' });
+
   const ok = await verifyPassword(password, user.password);
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 

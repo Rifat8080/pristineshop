@@ -181,6 +181,7 @@ function UserList({ userRole }) {
               <th className="p-2 text-left">Email</th>
               <th className="p-2 text-left">Name</th>
               <th className="p-2 text-left">Role</th>
+              <th className="p-2 text-left">Status</th>
               <th className="p-2 text-left">Created</th>
               <th className="p-2 text-left">Actions</th>
             </tr>
@@ -199,9 +200,16 @@ function UserList({ userRole }) {
                     {u.role}
                   </span>
                 </td>
-                <td className="p-2 text-xs text-green-700">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="p-2">
+                  <span className={`text-xs font-semibold ${u.suspended ? 'text-red-600' : 'text-green-600'}`}>
+                    {u.suspended ? 'Suspended' : 'Active'}
+                  </span>
+                </td>
+                <td className="p-2 text-xs text-green-700">{new Date(u.createdAt).toLocaleDateString()}</td>
+                <td className="p-2 space-x-1">
                   <PromoteButton userId={u.id} userRole={u.role} adminRole={userRole} />
+                  <SuspendButton userId={u.id} suspended={u.suspended} userRole={u.role} adminRole={userRole} />
+                  <DeleteButton userId={u.id} userRole={u.role} adminRole={userRole} />
                 </td>
               </tr>
             ))}
@@ -258,7 +266,9 @@ function PromoteButton({ userId, userRole, adminRole }) {
     }
   }
 
-  if (userRole === 'USER') return null;
+  // SUPER_ADMIN can promote any user; ADMIN can only promote USER to ADMIN
+  if (adminRole === 'ADMIN' && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')) return null;
+  if (adminRole !== 'ADMIN' && adminRole !== 'SUPER_ADMIN') return null;
 
   const availableRoles = ['USER', 'ADMIN'];
   if (adminRole === 'SUPER_ADMIN') availableRoles.push('SUPER_ADMIN');
@@ -277,5 +287,90 @@ function PromoteButton({ userId, userRole, adminRole }) {
         </option>
       ))}
     </select>
+  );
+}
+
+function SuspendButton({ userId, suspended, userRole, adminRole }) {
+  const [loading, setLoading] = useState(false);
+
+  async function toggle() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/suspend-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId, suspended: !suspended }),
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const d = await res.json();
+        alert('Error: ' + (d.error || 'Failed'));
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // SUPER_ADMIN can suspend anyone; ADMIN can only suspend USER and ADMIN
+  if (adminRole === 'ADMIN' && userRole === 'SUPER_ADMIN') return null;
+  if (adminRole !== 'ADMIN' && adminRole !== 'SUPER_ADMIN') return null;
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={loading}
+      className={`text-xs px-2 py-1 rounded font-medium ${
+        suspended
+          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+      } disabled:opacity-50`}
+    >
+      {suspended ? 'Unsuspend' : 'Suspend'}
+    </button>
+  );
+}
+
+function DeleteButton({ userId, userRole, adminRole }) {
+  const [loading, setLoading] = useState(false);
+
+  async function deleteUser() {
+    if (!confirm(`Delete this ${userRole}?`)) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const d = await res.json();
+        alert('Error: ' + (d.error || 'Failed'));
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // SUPER_ADMIN can delete anyone; ADMIN can only delete USER and ADMIN
+  if (adminRole === 'ADMIN' && userRole === 'SUPER_ADMIN') return null;
+  if (adminRole !== 'ADMIN' && adminRole !== 'SUPER_ADMIN') return null;
+
+  return (
+    <button
+      onClick={deleteUser}
+      disabled={loading}
+      className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-medium hover:bg-red-200 disabled:opacity-50"
+    >
+      Delete
+    </button>
   );
 }
