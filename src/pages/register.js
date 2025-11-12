@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import AuthLayout from '@/components/layouts/AuthLayout';
+import Link from 'next/link';
 
 export default function Register() {
   const router = useRouter();
@@ -21,8 +23,9 @@ export default function Register() {
         body: JSON.stringify({ email, password, name }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Register failed');
-      router.push('/profile');
+  if (!res.ok) throw new Error(data?.error || 'Register failed');
+  // After register, send user to root which is wrapped by AppLayout
+  router.push('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,9 +54,11 @@ export default function Register() {
         </form>
 
         <div className="mt-4 text-sm">
-          Already have an account? <a href="/login" className="text-indigo-600">Sign in</a>
+          Already have an account? <Link href="/login" className="text-indigo-600">Sign in</Link>
         </div>
       </div>
     </div>
   );
 }
+
+  Register.Layout = AuthLayout;

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import AuthLayout from '@/components/layouts/AuthLayout';
+import Link from 'next/link';
 
 export default function Login() {
   const router = useRouter();
@@ -20,8 +22,9 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Login failed');
-      router.push('/profile');
+  if (!res.ok) throw new Error(data?.error || 'Login failed');
+  // After login, send user to root which is wrapped by AppLayout (will show sidebar)
+  router.push('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -63,9 +66,11 @@ export default function Login() {
         </form>
 
         <div className="mt-4 text-sm">
-          Don't have an account? <a href="/register" className="text-indigo-600">Register</a>
+          Don&apos;t have an account? <Link href="/register" className="text-indigo-600">Register</Link>
         </div>
       </div>
     </div>
   );
 }
+
+  Login.Layout = AuthLayout;
