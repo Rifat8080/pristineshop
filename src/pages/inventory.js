@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 const BarcodeGenerator = dynamic(() => import('../components/BarcodeGenerator'), { ssr: false });
@@ -5,7 +6,7 @@ const BarcodeGenerator = dynamic(() => import('../components/BarcodeGenerator'),
 export default function InventoryPage() {
   const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '', sku: '', barcodeFormat: 'CODE128' });
-  const [recentBarcodeValue, setRecentBarcodeValue] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -23,13 +24,6 @@ export default function InventoryPage() {
       setLoading(false);
     }
     loadProducts();
-    // load recent barcode value from localStorage so barcode persists across refresh
-    try {
-      const persisted = typeof window !== 'undefined' ? window.localStorage.getItem('recentBarcodeValue') : null;
-      if (persisted) setRecentBarcodeValue(persisted);
-    } catch (e) {
-      // ignore
-    }
   }, []);
 
   async function handleUpdateInventory(productId, newQuantity) {
@@ -68,9 +62,6 @@ export default function InventoryPage() {
       if (!res.ok) throw new Error('Failed');
   const created = await res.json();
   setProducts(products => [...products, created]);
-  const barcodeValue = created.barcode || created.sku || created.id;
-  setRecentBarcodeValue(barcodeValue);
-  try { window.localStorage.setItem('recentBarcodeValue', barcodeValue); } catch (e) {}
   setNewProduct({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '' });
     } catch (err) {
       setError('Failed to create product');
@@ -204,11 +195,13 @@ export default function InventoryPage() {
               <td className="border px-4 py-2">{product.subtitle || '-'}</td>
               <td className="border px-4 py-2">{product.name}</td>
               <td className="border px-4 py-2">{product.sku || '-'}</td>
-              <td className="border px-4 py-2">{product.barcode || '-'}</td>
+              <td className="border px-4 py-2">
+                {product.barcode ? <BarcodeGenerator value={product.barcode} /> : '-'}
+              </td>
               <td className="border px-4 py-2">${Number(product.price).toFixed(2)}</td>
               <td className="border px-4 py-2">{product.stockQuantity}</td>
               <td className="border px-4 py-2">
-                {product.image ? <img src={product.image} alt={product.name} className="h-12" /> : '-'}
+                {product.image ? <Image src={product.image} alt={product.name} width={48} height={48} className="h-12" /> : '-'}
               </td>
               <td className="border px-4 py-2">
                 <input
@@ -221,6 +214,10 @@ export default function InventoryPage() {
               </td>
               <td className="border px-4 py-2">
                 <button
+                  className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                  onClick={() => setEditingProduct(product.id)}
+                >Edit</button>
+                <button
                   className="bg-red-500 text-white px-3 py-1 rounded"
                   onClick={() => handleDeleteProduct(product.id)}
                 >Delete</button>
@@ -229,12 +226,112 @@ export default function InventoryPage() {
           ))}
         </tbody>
       </table>
-      {recentBarcodeValue && (
-        <div className="mt-6 border p-4">
-          <h2 className="text-lg font-semibold mb-2">Barcode for recently created product</h2>
-          <BarcodeGenerator value={recentBarcodeValue} />
-        </div>
+      {editingProduct && (
+        <EditProductForm
+          productId={editingProduct}
+          products={products}
+          setProducts={setProducts}
+          setEditingProduct={setEditingProduct}
+          setError={setError}
+        />
       )}
+    </div>
+  );
+}
+
+function EditProductForm({ productId, products, setProducts, setEditingProduct, setError }) {
+  const productToEdit = products.find(p => p.id === productId);
+  const [formData, setFormData] = useState({
+    name: productToEdit.name,
+    stockQuantity: productToEdit.stockQuantity,
+    price: productToEdit.price,
+    image: productToEdit.image || '',
+    description: productToEdit.description || '',
+    title: productToEdit.title || '',
+    subtitle: productToEdit.subtitle || '',
+    sku: productToEdit.sku || '',
+    barcode: productToEdit.barcode || '',
+    barcodeFormat: productToEdit.barcodeFormat || 'CODE128',
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/inventory/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('Failed to update product');
+      const updatedProduct = await res.json();
+      setProducts(products.map(p => (p.id === updatedProduct.id ? updatedProduct : p)));
+      setEditingProduct(null); // Close the form
+    } catch (err) {
+      console.error(err);
+      setError('Failed to update product');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 className="text-xl font-bold mb-4">Edit Product</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Title</label>
+            <input type="text" name="title" value={formData.title} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Subtitle</label>
+            <input type="text" name="subtitle" value={formData.subtitle} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
+            <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Price</label>
+            <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">SKU</label>
+            <input type="text" name="sku" value={formData.sku} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Barcode</label>
+            <input type="text" name="barcode" value={formData.barcode} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Barcode Format</label>
+            <select name="barcodeFormat" value={formData.barcodeFormat} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+              <option value="CODE128">CODE128</option>
+              <option value="EAN13">EAN13</option>
+              <option value="UPC">UPC</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Image URL</label>
+            <input type="text" name="image" value={formData.image} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
+          </div>
+          <div className="col-span-2 flex justify-end space-x-2">
+            <button type="button" onClick={() => setEditingProduct(null)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md">Update Product</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

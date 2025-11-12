@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { useState } from 'react';
 import BarcodeScanner from '../components/BarcodeScanner';
 
@@ -142,7 +143,7 @@ export default function ScanPage() {
             </div>
             {product.image && (
               <div className="mt-4">
-                <img src={product.image} alt={product.name} className="h-32 rounded" />
+                <Image src={product.image} alt={product.name} width={128} height={128} className="h-32 rounded" />
               </div>
             )}
             {product.description && <p className="mt-4 text-gray-700">{product.description}</p>}

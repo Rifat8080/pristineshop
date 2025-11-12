@@ -15,7 +15,7 @@ export default function Profile() {
       .then((data) => setUser(data.user))
       .catch(() => router.push('/login'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   if (loading) return <div className="p-8">Loading…</div>;
   if (!user) return null;

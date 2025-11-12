@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -52,7 +53,7 @@ export default function AppLayout({ children }) {
                 </svg>
               </button>
               <Link href="/" className="flex ms-2 md:me-24 items-center">
-                <img src="/flowbite-logo.svg" className="h-8 me-3" alt="Logo" />
+                <Image src="/flowbite-logo.svg" width={32} height={32} className="h-8 me-3" alt="Logo" />
                 <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">PristineShop</span>
               </Link>
             </div>
@@ -172,7 +173,7 @@ function UserMenu({ user, onSignOut }) {
     <div ref={ref} className="relative">
       <button onClick={() => setOpen((s) => !s)} className="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
         <span className="sr-only">Open user menu</span>
-        <img className="w-8 h-8 rounded-full" src={user?.avatar || 'https://flowbite.com/docs/images/people/profile-picture-5.jpg'} alt="user photo" />
+        <Image width={32} height={32} className="w-8 h-8 rounded-full" src={user?.avatar || 'https://flowbite.com/docs/images/people/profile-picture-5.jpg'} alt="user photo" />
       </button>
 
       {open && (

@@ -25,7 +25,7 @@ export default function Admin() {
       })
       .catch(() => router.push('/login'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   if (loading) return <div className="p-8">Loading…</div>;
   if (!user) return null;
@@ -159,15 +159,20 @@ function UserList({ userRole }) {
   const limit = 10;
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/admin/list-users?page=${page}&limit=${limit}`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => {
+    const loadUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/admin/list-users?page=${page}&limit=${limit}`, { credentials: 'include' });
+        const d = await res.json();
         setUsers(d.users || []);
         setTotal(d.pagination?.total || 0);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUsers();
   }, [page]);
 
   if (loading) return <div>Loading…</div>;
