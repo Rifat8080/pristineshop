@@ -7,15 +7,23 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:test": "next dev --port 3001"
+    "db:test": "next dev --port 3001",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "db:setup": "npm run prisma:generate && npm run prisma:migrate"
   },
   "dependencies": {
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "next": "16.0.1",
-    "pg": "^8.11.0"
+    "pg": "^8.11.0",
+    "@prisma/client": "^5.8.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cookie": "^0.5.0"
   },
   "devDependencies": {
+    "prisma": "^5.8.0",
     "babel-plugin-react-compiler": "1.0.0",
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
