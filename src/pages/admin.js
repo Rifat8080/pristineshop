@@ -31,12 +31,12 @@ export default function Admin() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-red-50">
       <div className="bg-white shadow">
         <div className="max-w-6xl mx-auto px-4 py-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <div>
-            <span className="text-gray-600 mr-4">{user.name || user.email}</span>
+            <span className="text-green-700 mr-4">{user.name || user.email}</span>
             <button
               onClick={async () => {
                 await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
@@ -59,8 +59,8 @@ export default function Admin() {
 
           <div className="bg-white p-6 rounded shadow">
             <h3 className="text-lg font-semibold mb-2">Quick Stats</h3>
-            <p className="text-gray-600">Your Role: <span className="font-bold">{user.role}</span></p>
-            <p className="text-gray-600 text-sm mt-2">
+            <p className="text-green-700">Your Role: <span className="font-bold">{user.role}</span></p>
+            <p className="text-green-700 text-sm mt-2">
               {user.role === 'SUPER_ADMIN'
                 ? '✓ Can create users of all roles and promote other admins'
                 : '✓ Can create USER and ADMIN accounts'}
@@ -199,7 +199,7 @@ function UserList({ userRole }) {
                     {u.role}
                   </span>
                 </td>
-                <td className="p-2 text-xs text-gray-600">{new Date(u.createdAt).toLocaleDateString()}</td>
+                <td className="p-2 text-xs text-green-700">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="p-2">
                   <PromoteButton userId={u.id} userRole={u.role} adminRole={userRole} />
                 </td>
@@ -209,7 +209,7 @@ function UserList({ userRole }) {
         </table>
       </div>
       <div className="flex justify-between items-center text-sm">
-        <span className="text-gray-600">
+        <span className="text-green-700">
           Page {page} of {Math.ceil(total / limit)} ({total} total)
         </span>
         <div className="space-x-2">
