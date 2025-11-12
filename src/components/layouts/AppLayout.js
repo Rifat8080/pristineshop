@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useRef } from 'react';
 
 export default function AppLayout({ children }) {
   const router = useRouter();
@@ -55,33 +56,9 @@ export default function AppLayout({ children }) {
               </Link>
             </div>
             <div className="flex items-center">
-              <div className="flex items-center ms-3">
-                <div>
-                  <button type="button" className="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" aria-expanded="false" data-dropdown-toggle="dropdown-user">
-                    <span className="sr-only">Open user menu</span>
-                    <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
-                  </button>
-                </div>
-                <div className="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-sm shadow-sm dark:bg-gray-700 dark:divide-gray-600" id="dropdown-user">
-                  <div className="px-4 py-3" role="none">
-                    <p className="text-sm text-gray-900 dark:text-white" role="none">{user?.name || '—'}</p>
-                    <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">{user?.email}</p>
-                  </div>
-                  <ul className="py-1" role="none">
-                    <li>
-                      <Link href="/" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Dashboard</Link>
-                    </li>
-                    <li>
-                      <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Settings</Link>
-                    </li>
-                    <li>
-                      <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Earnings</Link>
-                    </li>
-                    <li>
-                      <button onClick={signOut} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Sign out</button>
-                    </li>
-                  </ul>
-                </div>
+              <div className="flex items-center ms-3 relative">
+                {/* Simple React dropdown to avoid third-party export issues */}
+                <UserMenu user={user} onSignOut={signOut} />
               </div>
             </div>
           </div>
@@ -102,7 +79,7 @@ export default function AppLayout({ children }) {
               </Link>
             </li>
             <li>
-              <Link href="/kanban" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+              <Link href="/admin" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                 <svg className="shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
                   <path d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z"/>
                 </svg>
@@ -165,6 +142,53 @@ export default function AppLayout({ children }) {
       </div>
 
       <footer className="max-w-6xl mx-auto p-4 text-sm text-center text-gray-500">© PristineShop</footer>
+    </div>
+  );
+}
+
+function UserMenu({ user, onSignOut }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = useRef(null);
+
+  React.useEffect(() => {
+    function onDoc(e) {
+      if (!ref.current) return;
+      if (ref.current.contains(e.target)) return;
+      setOpen(false);
+    }
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((s) => !s)} className="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
+        <span className="sr-only">Open user menu</span>
+        <img className="w-8 h-8 rounded-full" src={user?.avatar || 'https://flowbite.com/docs/images/people/profile-picture-5.jpg'} alt="user photo" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-48 z-50 text-base list-none bg-white divide-y divide-gray-100 rounded-sm shadow-sm dark:bg-gray-700 dark:divide-gray-600">
+          <div className="px-4 py-3">
+            <p className="text-sm text-gray-900 dark:text-white">{user?.name || '—'}</p>
+            <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-300">{user?.email}</p>
+          </div>
+          <ul className="py-1">
+            <li>
+              <Link className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" href="/">Dashboard</Link>
+            </li>
+            <li>
+              <Link className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" href="/profile">Settings</Link>
+            </li>
+            <li>
+              <Link className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" href="/admin">Earnings</Link>
+            </li>
+            <li>
+              <button onClick={onSignOut} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white">Sign out</button>
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
