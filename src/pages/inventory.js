@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+const BarcodeGenerator = dynamic(() => import('../components/BarcodeGenerator'), { ssr: false });
 
 export default function InventoryPage() {
   const [products, setProducts] = useState([]);
-  const [newProduct, setNewProduct] = useState({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '', sku: '', barcodeFormat: 'CODE128' });
+  const [recentBarcodeValue, setRecentBarcodeValue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,6 +23,13 @@ export default function InventoryPage() {
       setLoading(false);
     }
     loadProducts();
+    // load recent barcode value from localStorage so barcode persists across refresh
+    try {
+      const persisted = typeof window !== 'undefined' ? window.localStorage.getItem('recentBarcodeValue') : null;
+      if (persisted) setRecentBarcodeValue(persisted);
+    } catch (e) {
+      // ignore
+    }
   }, []);
 
   async function handleUpdateInventory(productId, newQuantity) {
@@ -51,12 +61,17 @@ export default function InventoryPage() {
           description: newProduct.description,
           title: newProduct.title,
           subtitle: newProduct.subtitle,
+          sku: newProduct.sku || undefined,
+          barcodeFormat: newProduct.barcodeFormat || undefined,
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      const created = await res.json();
-      setProducts(products => [...products, created]);
-      setNewProduct({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '' });
+  const created = await res.json();
+  setProducts(products => [...products, created]);
+  const barcodeValue = created.barcode || created.sku || created.id;
+  setRecentBarcodeValue(barcodeValue);
+  try { window.localStorage.setItem('recentBarcodeValue', barcodeValue); } catch (e) {}
+  setNewProduct({ name: '', stock_quantity: 0, price: 0, image: '', description: '', title: '', subtitle: '' });
     } catch (err) {
       setError('Failed to create product');
     }
@@ -131,6 +146,23 @@ export default function InventoryPage() {
           />
         </div>
         <div>
+          <label className="block mb-1">SKU (optional)</label>
+          <input
+            type="text"
+            value={newProduct.sku}
+            onChange={e => setNewProduct({ ...newProduct, sku: e.target.value })}
+            className="border px-2 py-1"
+          />
+        </div>
+        <div>
+          <label className="block mb-1">Barcode Format</label>
+          <select value={newProduct.barcodeFormat} onChange={e => setNewProduct({ ...newProduct, barcodeFormat: e.target.value })} className="border px-2 py-1">
+            <option value="CODE128">CODE128</option>
+            <option value="EAN13">EAN13</option>
+            <option value="UPC">UPC</option>
+          </select>
+        </div>
+        <div>
           <label className="block mb-1">Image URL</label>
           <input
             type="text"
@@ -156,6 +188,8 @@ export default function InventoryPage() {
             <th className="border px-4 py-2">Title</th>
             <th className="border px-4 py-2">Subtitle</th>
             <th className="border px-4 py-2">Name</th>
+            <th className="border px-4 py-2">SKU</th>
+            <th className="border px-4 py-2">Barcode</th>
             <th className="border px-4 py-2">Price</th>
             <th className="border px-4 py-2">Stock</th>
             <th className="border px-4 py-2">Image</th>
@@ -169,6 +203,8 @@ export default function InventoryPage() {
               <td className="border px-4 py-2">{product.title || '-'}</td>
               <td className="border px-4 py-2">{product.subtitle || '-'}</td>
               <td className="border px-4 py-2">{product.name}</td>
+              <td className="border px-4 py-2">{product.sku || '-'}</td>
+              <td className="border px-4 py-2">{product.barcode || '-'}</td>
               <td className="border px-4 py-2">${Number(product.price).toFixed(2)}</td>
               <td className="border px-4 py-2">{product.stockQuantity}</td>
               <td className="border px-4 py-2">
@@ -193,6 +229,12 @@ export default function InventoryPage() {
           ))}
         </tbody>
       </table>
+      {recentBarcodeValue && (
+        <div className="mt-6 border p-4">
+          <h2 className="text-lg font-semibold mb-2">Barcode for recently created product</h2>
+          <BarcodeGenerator value={recentBarcodeValue} />
+        </div>
+      )}
     </div>
   );
 }

@@ -32,6 +32,9 @@ model Product {
   description   String?
   title         String?
   subtitle      String?
+  sku           String?  @unique
+  barcode       String?  @unique
+  barcodeFormat String?  @default("CODE128")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   orders        Order[]

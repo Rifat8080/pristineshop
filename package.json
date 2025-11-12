@@ -15,6 +15,8 @@
   "dependencies": {
     "@prisma/client": "^5.8.0",
     "axios": "^1.13.2",
+  "jsbarcode": "^3.11.5",
+  "@zxing/library": "^0.19.1",
     "bcryptjs": "^2.4.3",
     "cookie": "^0.5.0",
     "flowbite": "^3.1.2",
